@@ -27,6 +27,7 @@ interface BitbucketActivity {
 interface BitbucketConfig {
   baseUrl: string;
   token?: string;
+  iapToken?: string;
   username?: string;
   password?: string;
   defaultProject?: string;
@@ -112,6 +113,7 @@ class BitbucketServer {
     this.config = {
       baseUrl: process.env.BITBUCKET_URL ?? '',
       token: process.env.BITBUCKET_TOKEN,
+      iapToken: process.env.BITBUCKET_IAP_TOKEN,
       username: process.env.BITBUCKET_USERNAME,
       password: process.env.BITBUCKET_PASSWORD,
       defaultProject: process.env.BITBUCKET_DEFAULT_PROJECT,
@@ -129,12 +131,18 @@ class BitbucketServer {
       throw new Error('Either BITBUCKET_TOKEN or BITBUCKET_USERNAME/PASSWORD is required');
     }
 
+    const headers: Record<string, string> = {};
+    if (this.config.token) {
+      headers['Authorization'] = `Bearer ${this.config.token}`;
+    }
+    if (this.config.iapToken) {
+      headers['Proxy-Authorization'] = `Bearer ${this.config.iapToken}`;
+    }
+
     // Configuration de l'instance Axios
     this.api = axios.create({
       baseURL: `${this.config.baseUrl}/rest/api/1.0`,
-      headers: this.config.token 
-        ? { Authorization: `Bearer ${this.config.token}` }
-        : {},
+      headers,
       auth: this.config.username && this.config.password
         ? { username: this.config.username, password: this.config.password }
         : undefined,
@@ -1062,13 +1070,19 @@ class BitbucketServer {
     try {
       // Use full URL for search API since it uses different base path
       const searchUrl = `${this.config.baseUrl}/rest/search/latest/search`;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      if (this.config.token) {
+        headers['Authorization'] = `Bearer ${this.config.token}`;
+      }
+      if (this.config.iapToken) {
+        headers['Proxy-Authorization'] = `Bearer ${this.config.iapToken}`;
+      }
+
       const response = await axios.post(searchUrl, requestBody, {
-        headers: this.config.token
-          ? { 
-              Authorization: `Bearer ${this.config.token}`,
-              'Content-Type': 'application/json'
-            }
-          : { 'Content-Type': 'application/json' },
+        headers,
         auth: this.config.username && this.config.password
           ? { username: this.config.username, password: this.config.password }
           : undefined,
