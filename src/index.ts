@@ -27,6 +27,7 @@ interface BitbucketActivity {
 interface BitbucketConfig {
   baseUrl: string;
   token?: string;
+  httpToken?: string;
   iapToken?: string;
   username?: string;
   password?: string;
@@ -113,6 +114,7 @@ class BitbucketServer {
     this.config = {
       baseUrl: process.env.BITBUCKET_URL ?? '',
       token: process.env.BITBUCKET_TOKEN,
+      httpToken: process.env.BITBUCKET_HTTP_TOKEN,
       iapToken: process.env.BITBUCKET_IAP_TOKEN,
       username: process.env.BITBUCKET_USERNAME,
       password: process.env.BITBUCKET_PASSWORD,
@@ -127,17 +129,11 @@ class BitbucketServer {
       throw new Error('BITBUCKET_URL is required');
     }
 
-    if (!this.config.token && !(this.config.username && this.config.password)) {
-      throw new Error('Either BITBUCKET_TOKEN or BITBUCKET_USERNAME/PASSWORD is required');
+    if (!this.config.token && !(this.config.httpToken && this.config.iapToken) && !(this.config.username && this.config.password)) {
+      throw new Error('Either BITBUCKET_TOKEN, BITBUCKET_USERNAME/PASSWORD or BITBUCKET_HTTP_TOKEN/BITBUCKET_IAP_TOKEN is required');
     }
 
-    const headers: Record<string, string> = {};
-    if (this.config.token) {
-      headers['Authorization'] = `Bearer ${this.config.token}`;
-    }
-    if (this.config.iapToken) {
-      headers['Proxy-Authorization'] = `Bearer ${this.config.iapToken}`;
-    }
+    const headers = this.getAuthHeaders(this.config);
 
     // Configuration de l'instance Axios
     this.api = axios.create({
@@ -151,6 +147,19 @@ class BitbucketServer {
     this.setupToolHandlers();
     
     this.server.onerror = (error) => logger.error('[MCP Error]', error);
+  }
+
+  private getAuthHeaders(config: BitbucketConfig): Record<string, string> {
+    const headers: Record<string, string> = {};
+    if (config.token) {
+      headers['Authorization'] = `Bearer ${config.token}`;
+    } else if (config.httpToken) {
+      headers['Authorization'] = `Bearer ${config.httpToken}`;
+    }
+    if (config.iapToken) {
+      headers['Proxy-Authorization'] = `Bearer ${config.iapToken}`;
+    }
+    return headers;
   }
 
   private isPullRequestInput(args: unknown): args is PullRequestInput {
@@ -1072,14 +1081,9 @@ class BitbucketServer {
       const searchUrl = `${this.config.baseUrl}/rest/search/latest/search`;
       
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...this.getAuthHeaders(this.config)
       };
-      if (this.config.token) {
-        headers['Authorization'] = `Bearer ${this.config.token}`;
-      }
-      if (this.config.iapToken) {
-        headers['Proxy-Authorization'] = `Bearer ${this.config.iapToken}`;
-      }
 
       const response = await axios.post(searchUrl, requestBody, {
         headers,

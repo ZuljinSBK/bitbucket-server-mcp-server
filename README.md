@@ -388,6 +388,9 @@ The server requires configuration in the VSCode MCP settings file. Here's a samp
         // Option 2: Username/Password
         "BITBUCKET_USERNAME": "your-username",
         "BITBUCKET_PASSWORD": "your-password",
+        // Option 3: HTTP Access Token + IAP OAuth Authorization Token
+        "BITBUCKET_HTTP_TOKEN": "your-http-access-token",
+        "BITBUCKET_IAP_TOKEN": "your-iap-access-token",
         // Optional: Default project
         "BITBUCKET_DEFAULT_PROJECT": "your-default-project"
       }
@@ -402,6 +405,7 @@ The server requires configuration in the VSCode MCP settings file. Here's a samp
 - Authentication (one of the following is required):
   - `BITBUCKET_TOKEN`: Personal access token
   - `BITBUCKET_USERNAME` and `BITBUCKET_PASSWORD`: Basic authentication credentials
+  - `BITBUCKET_HTTP_TOKEN` and `BITBUCKET_IAP_TOKEN`: HTTP access token + IAP OAuth authorization token
 - `BITBUCKET_DEFAULT_PROJECT` (optional): Default project key to use when not specified in tool calls
 - `BITBUCKET_DIFF_MAX_LINES_PER_FILE` (optional): Default maximum lines to show per file in diffs. Set to prevent large files from overwhelming output. Can be overridden by the `maxLinesPerFile` parameter in `get_diff` calls.
 - `BITBUCKET_READ_ONLY` (optional): Set to `true` to enable read-only mode
